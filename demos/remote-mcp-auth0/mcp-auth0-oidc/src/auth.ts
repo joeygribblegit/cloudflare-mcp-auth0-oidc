@@ -52,6 +52,34 @@ export async function getOidcConfig({
 	return { as, client, clientAuth };
 }
 
+function normalizeResourceToOrigin(resource: string): string | undefined {
+	try {
+		const parsed = new URL(resource);
+		if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+			return undefined;
+		}
+		return `${parsed.protocol}//${parsed.host}`;
+	} catch {
+		return undefined;
+	}
+}
+
+function normalizeOAuthResource(resource: AuthRequest["resource"]): AuthRequest["resource"] {
+	if (!resource) {
+		return resource;
+	}
+
+	if (Array.isArray(resource)) {
+		const normalized = [...new Set(resource.map(normalizeResourceToOrigin).filter(Boolean))];
+		if (normalized.length === 0) {
+			return undefined;
+		}
+		return normalized.length === 1 ? normalized[0] : normalized;
+	}
+
+	return normalizeResourceToOrigin(resource);
+}
+
 /**
  * OAuth Authorization Endpoint
  *
@@ -60,7 +88,21 @@ export async function getOidcConfig({
  * Uses secure state management with KV storage and CSRF protection.
  */
 export async function authorize(c: Context<{ Bindings: Env & { OAUTH_PROVIDER: OAuthHelpers } }>) {
-	const mcpClientAuthRequest = await c.env.OAUTH_PROVIDER.parseAuthRequest(c.req.raw);
+	const parsedAuthRequest = await c.env.OAUTH_PROVIDER.parseAuthRequest(c.req.raw);
+	const mcpClientAuthRequest: AuthRequest = {
+		...parsedAuthRequest,
+		resource: normalizeOAuthResource(parsedAuthRequest.resource),
+	};
+
+	if (parsedAuthRequest.resource) {
+		console.log(
+			"[oauth] normalized resource",
+			JSON.stringify(parsedAuthRequest.resource),
+			"->",
+			JSON.stringify(mcpClientAuthRequest.resource),
+		);
+	}
+
 	if (!mcpClientAuthRequest.clientId) {
 		return c.text("Invalid request", 400);
 	}

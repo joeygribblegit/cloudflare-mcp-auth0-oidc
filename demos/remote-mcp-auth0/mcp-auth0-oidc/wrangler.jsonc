@@ -7,10 +7,14 @@
 	"name": "mcp-auth0-oidc",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-04-01",
-	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
 	"migrations": [
 		{
-			"new_sqlite_classes": ["AuthenticatedMCP"],
+			"new_sqlite_classes": [
+				"AuthenticatedMCP"
+			],
 			"tag": "v1"
 		}
 	],
@@ -25,7 +29,8 @@
 	"kv_namespaces": [
 		{
 			"binding": "OAUTH_KV",
-			"id": "<Enter your KV ID here>"
+			"id": "1a602d5d142543b88c955b4c391e7913",
+			"remote": true
 		}
 	],
 	"ai": {
